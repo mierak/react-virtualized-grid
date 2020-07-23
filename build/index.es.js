@@ -1,5 +1,4 @@
 import React, { useRef, useState, useLayoutEffect, useEffect } from 'react';
-import debounce from 'lodash.debounce';
 
 /*! *****************************************************************************
 Copyright (c) Microsoft Corporation.
@@ -24,26 +23,25 @@ function __spreadArrays() {
     return r;
 }
 
-var getGridContainerStyle = function (columns, cellWidth, gridGap) {
-    return {
-        display: 'grid',
-        gridTemplateColumns: "repeat(" + columns + ", minmax(" + cellWidth + "px, 1fr)",
-        gridGap: gridGap + "px",
-        marginLeft: 'auto',
-        marginRight: 'auto',
-        overflowY: 'auto',
-        border: '1px solid black',
-        width: '100%',
+var debounce = function (callback, wait) {
+    var timeout;
+    return function () {
+        var _this = this;
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+        var functionCall = function () { return callback.apply(_this, args); };
+        clearTimeout(timeout);
+        timeout = setTimeout(functionCall, wait);
     };
 };
-var getCellStyle = function (height) {
-    return {
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: height,
-        boxSizing: 'border-box',
-    };
+var createCustomStyleProperties = function (properties) {
+    var obj = {};
+    properties.forEach(function (property) {
+        obj["--" + property[0]] = property[1];
+    });
+    return obj;
 };
 
 var DummyRow = function (_a) {
@@ -51,20 +49,36 @@ var DummyRow = function (_a) {
     return (React.createElement(React.Fragment, null, __spreadArrays(Array(columns)).map(function (_, index) { return (React.createElement("div", { key: index, style: { height: rows * (rowHeight + gapSize) } })); })));
 };
 
+var e=[],t=[];function injector_256af7c9(n,r){if(n&&"undefined"!=typeof document){var a,s=!0===r.prepend?"prepend":"append",d=!0===r.singleTag,i="string"==typeof r.container?document.querySelector(r.container):document.getElementsByTagName("head")[0];if(d){var u=e.indexOf(i);-1===u&&(u=e.push(i)-1,t[u]={}),a=t[u]&&t[u][s]?t[u][s]:t[u][s]=c();}else a=c();65279===n.charCodeAt(0)&&(n=n.substring(1)),a.styleSheet?a.styleSheet.cssText+=n:a.appendChild(document.createTextNode(n));}function c(){var e=document.createElement("style");if(e.setAttribute("type","text/css"),r.attributes)for(var t=Object.keys(r.attributes),n=0;n<t.length;n++)e.setAttribute(t[n],r.attributes[t[n]]);var a="prepend"===s?"afterbegin":"beforeend";return i.insertAdjacentElement(a,e),e}}
+
+const css = ".container {\r\n\t--grid-gap: 5px;\r\n\t--grid-height: 100vh;\r\n\t--grid-columns: '2';\r\n\tdisplay: grid;\r\n\tgrid-template-columns: var(--grid-columns);\r\n\tgrid-gap: var(--grid-gap);\r\n\toverflow-y: auto;\r\n\twidth: 100%;\r\n\tmax-height: 100vh;\r\n\theight: var(--grid-height);\r\n}\r\n\r\n.cell {\r\n\t--cell-height: 40px;\r\n\tdisplay: flex;\r\n\tjustify-content: center;\r\n\talign-items: center;\r\n\tbox-sizing: border-box;\r\n\theight: var(--cell-height);\r\n}\r\n";
+injector_256af7c9(css,{});
+
 var Cell = function (props) {
-    return React.createElement("div", { style: getCellStyle(props.height) }, props.children);
+    var style = createCustomStyleProperties([['cell-height', props.height + "px"]]);
+    return (React.createElement("div", { className: 'cell', style: style }, props.children));
 };
 
 var VirtualizedGrid = function (props) {
-    var _a, _b, _c;
+    var _a, _b, _c, _d;
     var gridRef = useRef(null);
     var previousScroll = useRef({ value: 0 });
-    var prevScrollPercent = useRef({ value: 0 });
-    var _d = useState({ rows: 0, columns: 0 }), config = _d[0], setConfig = _d[1];
-    var _e = useState({ from: 0, to: 30 }), fromTo = _e[0], setFromTo = _e[1];
+    var _e = useState({ rows: 0, columns: 0 }), config = _e[0], setConfig = _e[1];
+    var _f = useState({ from: 0, to: 30 }), fromTo = _f[0], setFromTo = _f[1];
     var debounceDelay = (_a = props.debounceDelay) !== null && _a !== void 0 ? _a : 300;
-    var prerenderRows = (_b = props.prerenderRows) !== null && _b !== void 0 ? _b : 3;
+    var prerenderScreens = (_b = props.prerenderScreens) !== null && _b !== void 0 ? _b : 3;
     var gridGap = (_c = props.gridGap) !== null && _c !== void 0 ? _c : 0;
+    var getGridHeight = function () {
+        if (!props.gridHeight) {
+            return '100vh';
+        }
+        if (typeof props.gridHeight === 'string') {
+            return props.gridHeight;
+        }
+        else {
+            return props.gridHeight + "px";
+        }
+    };
     useLayoutEffect(function () {
         if (gridRef.current && previousScroll.current.value !== gridRef.current.scrollTop) {
             gridRef.current.scrollTop = previousScroll.current.value;
@@ -84,7 +98,6 @@ var VirtualizedGrid = function (props) {
             if (ref) {
                 var columns = Math.floor(ref.clientWidth / (props.cellWidth + gridGap));
                 var rows = Math.ceil(props.itemCount / columns);
-                prevScrollPercent.current.value = ref.scrollTop / ref.scrollHeight;
                 setConfig({ columns: columns, rows: rows });
             }
         }, 0);
@@ -94,13 +107,10 @@ var VirtualizedGrid = function (props) {
             ref && resizeObserver.unobserve(ref);
         };
     }, [gridGap, props.cellWidth, props.debounceDelay, props.itemCount]);
-    useLayoutEffect(function () {
-        gridRef.current && (gridRef.current.scrollTop = gridRef.current.scrollHeight * prevScrollPercent.current.value);
-    }, [config]);
     var db = debounce(function (params) {
         var maxVisibleRows = Math.ceil(params.clientHeight / (props.rowHeight + gridGap));
-        var from = Math.max(0, Math.floor(params.scrollTop / (props.rowHeight + gridGap)) - maxVisibleRows * prerenderRows);
-        var to = Math.min(config.rows, from + maxVisibleRows * (prerenderRows * 2 + 1));
+        var from = Math.max(0, Math.floor(params.scrollTop / (props.rowHeight + gridGap)) - maxVisibleRows * prerenderScreens);
+        var to = Math.min(config.rows, from + maxVisibleRows * (prerenderScreens * 2 + 1));
         if (from > to) {
             setFromTo({ from: config.rows - (fromTo.to - fromTo.from), to: config.rows });
         }
@@ -118,7 +128,7 @@ var VirtualizedGrid = function (props) {
         return __spreadArrays(Array(fromTo.to - fromTo.from)).map(function (_, rowIndex) {
             return __spreadArrays(Array(config.columns)).map(function (_, cellIndex) {
                 var index = (rowIndex + fromTo.from) * config.columns + cellIndex;
-                return index < props.itemCount ? (React.createElement(Cell, { index: cellIndex, key: cellIndex, height: props.rowHeight }, props.children(index, rowIndex + fromTo.from, cellIndex))) : null;
+                return index < props.itemCount ? (React.createElement(Cell, { key: cellIndex, height: props.rowHeight }, props.children(index, rowIndex + fromTo.from, cellIndex))) : null;
             });
         });
     };
@@ -129,7 +139,12 @@ var VirtualizedGrid = function (props) {
         }
         return null;
     };
-    return (React.createElement("div", { className: props.className, ref: gridRef, style: getGridContainerStyle(config.columns, props.cellWidth, gridGap), onScroll: handleScroll },
+    var style = createCustomStyleProperties([
+        ['grid-gap', props.gridGap + "px"],
+        ['grid-height', getGridHeight()],
+        ['grid-columns', "repeat(" + config.columns + ", minmax(" + props.cellWidth + "px, 1fr))"],
+    ]);
+    return (React.createElement("div", { className: "container " + ((_d = props.className) !== null && _d !== void 0 ? _d : ''), ref: gridRef, style: style, onScroll: handleScroll },
         renderDummyRow(fromTo.from, fromTo.from > 0),
         renderCells(),
         renderDummyRow(config.rows - fromTo.to, fromTo.to < config.rows)));

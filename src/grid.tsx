@@ -1,17 +1,17 @@
 import React, { useRef, useState, useLayoutEffect, useEffect } from 'react';
-import debounce from 'lodash.debounce';
-
-import { getGridContainerStyle } from './styles';
+import { debounce, createCustomStyleProperties } from './util';
 import { DummyRow } from './dummy-row';
 import { Cell } from './cell';
+import './styles.css';
 
-type Props = {
+export type Props = {
 	itemCount: number;
 	rowHeight: number;
 	cellWidth: number;
 	debounceDelay?: number;
-	prerenderRows?: number;
+	prerenderScreens?: number;
 	gridGap?: number;
+	gridHeight?: string | number;
 	className?: string;
 	children(index: number, rowIndex: number, columnIndex: number): React.ReactNode;
 };
@@ -19,13 +19,23 @@ type Props = {
 export const VirtualizedGrid = (props: Props) => {
 	const gridRef = useRef<HTMLDivElement>(null);
 	const previousScroll = useRef({ value: 0 });
-	const prevScrollPercent = useRef({ value: 0 });
 	const [config, setConfig] = useState({ rows: 0, columns: 0 });
 	const [fromTo, setFromTo] = useState({ from: 0, to: 30 });
 
 	const debounceDelay = props.debounceDelay ?? 300;
-	const prerenderRows = props.prerenderRows ?? 3;
+	const prerenderScreens = props.prerenderScreens ?? 3;
 	const gridGap = props.gridGap ?? 0;
+
+	const getGridHeight = () => {
+		if (!props.gridHeight) {
+			return '100vh';
+		}
+		if (typeof props.gridHeight === 'string') {
+			return props.gridHeight;
+		} else {
+			return `${props.gridHeight}px`;
+		}
+	};
 
 	useLayoutEffect(() => {
 		if (gridRef.current && previousScroll.current.value !== gridRef.current.scrollTop) {
@@ -48,7 +58,6 @@ export const VirtualizedGrid = (props: Props) => {
 			if (ref) {
 				const columns = Math.floor(ref.clientWidth / (props.cellWidth + gridGap));
 				const rows = Math.ceil(props.itemCount / columns);
-				prevScrollPercent.current.value = ref.scrollTop / ref.scrollHeight;
 				setConfig({ columns, rows });
 			}
 		}, 0);
@@ -60,14 +69,10 @@ export const VirtualizedGrid = (props: Props) => {
 		};
 	}, [gridGap, props.cellWidth, props.debounceDelay, props.itemCount]);
 
-	useLayoutEffect(() => {
-		gridRef.current && (gridRef.current.scrollTop = gridRef.current.scrollHeight * prevScrollPercent.current.value);
-	}, [config]);
-
 	const db = debounce((params: { scrollTop: number; clientHeight: number }) => {
 		const maxVisibleRows = Math.ceil(params.clientHeight / (props.rowHeight + gridGap));
-		const from = Math.max(0, Math.floor(params.scrollTop / (props.rowHeight + gridGap)) - maxVisibleRows * prerenderRows);
-		const to = Math.min(config.rows, from + maxVisibleRows * (prerenderRows * 2 + 1));
+		const from = Math.max(0, Math.floor(params.scrollTop / (props.rowHeight + gridGap)) - maxVisibleRows * prerenderScreens);
+		const to = Math.min(config.rows, from + maxVisibleRows * (prerenderScreens * 2 + 1));
 
 		if (from > to) {
 			setFromTo({ from: config.rows - (fromTo.to - fromTo.from), to: config.rows });
@@ -89,7 +94,7 @@ export const VirtualizedGrid = (props: Props) => {
 			[...Array(config.columns)].map((_, cellIndex) => {
 				const index = (rowIndex + fromTo.from) * config.columns + cellIndex;
 				return index < props.itemCount ? (
-					<Cell index={cellIndex} key={cellIndex} height={props.rowHeight}>
+					<Cell key={cellIndex} height={props.rowHeight}>
 						{props.children(index, rowIndex + fromTo.from, cellIndex)}
 					</Cell>
 				) : null;
@@ -104,13 +109,14 @@ export const VirtualizedGrid = (props: Props) => {
 		return null;
 	};
 
+	const style = createCustomStyleProperties([
+		['grid-gap', `${props.gridGap}px`],
+		['grid-height', getGridHeight()],
+		['grid-columns', `repeat(${config.columns}, minmax(${props.cellWidth}px, 1fr))`],
+	]);
+
 	return (
-		<div
-			className={props.className}
-			ref={gridRef}
-			style={getGridContainerStyle(config.columns, props.cellWidth, gridGap)}
-			onScroll={handleScroll}
-		>
+		<div className={`container ${props.className ?? ''}`} ref={gridRef} style={style} onScroll={handleScroll}>
 			{renderDummyRow(fromTo.from, fromTo.from > 0)}
 			{renderCells()}
 			{renderDummyRow(config.rows - fromTo.to, fromTo.to < config.rows)}

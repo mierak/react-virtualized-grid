@@ -1,6 +1,6 @@
 import React from 'react';
+import './styles.css';
 declare type Props = {
-    index: number;
     children: React.ReactNode;
     height: number;
 };

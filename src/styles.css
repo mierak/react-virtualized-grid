@@ -1,0 +1,21 @@
+.container {
+	--grid-gap: 5px;
+	--grid-height: 100vh;
+	--grid-columns: '2';
+	display: grid;
+	grid-template-columns: var(--grid-columns);
+	grid-gap: var(--grid-gap);
+	overflow-y: auto;
+	width: 100%;
+	max-height: 100vh;
+	height: var(--grid-height);
+}
+
+.cell {
+	--cell-height: 40px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	box-sizing: border-box;
+	height: var(--cell-height);
+}

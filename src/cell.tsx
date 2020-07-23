@@ -1,12 +1,17 @@
 import React from 'react';
-import { getCellStyle } from './styles';
+import './styles.css';
+import { createCustomStyleProperties } from './util';
 
 type Props = {
-	index: number;
 	children: React.ReactNode;
 	height: number;
 };
 
 export const Cell: React.FunctionComponent<Props> = (props: Props) => {
-	return <div style={getCellStyle(props.height)}>{props.children}</div>;
+	const style = createCustomStyleProperties([['cell-height', `${props.height}px`]]);
+	return (
+		<div className='cell' style={style}>
+			{props.children}
+		</div>
+	);
 };
