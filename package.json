@@ -1,6 +1,6 @@
 {
 	"name": "@mierak/react-virtualized-grid",
-	"version": "0.0.3-ALPHA",
+	"version": "0.0.4-ALPHA",
 	"main": "build/index.js",
 	"module": "build/index.es.js",
 	"jsnext:main": "build/index.es.js",
@@ -36,5 +36,12 @@
 		"rollup-plugin-typescript2": "^0.27.1",
 		"typescript": "^3.9.7"
 	},
+	"keywords": [
+		"react",
+		"grid",
+		"virtualized",
+		"performance",
+		"list"
+	],
 	"description": ""
 }

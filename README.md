@@ -22,11 +22,15 @@ npm i @mierak/react-virtualized-grid
 import React from 'react';
 import { VirtualizedGrid } from '@mierak/react-virtualized-grid';
 
-export default () => (
-	<VirtualizedGrid itemCount={100000} rowHeight={50} cellWidth={100} gridHeight='300px'>
-		{(index) => <div>{index}</div>}
-	</VirtualizedGrid>
-);
+export default () => {
+	const elements = [...new Array(100000)].map((_, index) => index);
+
+	return (
+		<VirtualizedGrid itemCount={elements.length} rowHeight={50} cellWidth={100} gridHeight={300}>
+			{(index) => <div>{elements[index]}</div>}
+		</VirtualizedGrid>
+	);
+};
 ```
 
 ## Preview
@@ -54,7 +58,7 @@ You can use any of the parameters passed in the children callback to render your
 ## Limitations
 
 - All elements must have equal size
-- Currently there is no inbuilt way to render previews before element gets renderer after scrolling
+- Currently there is no inbuilt way to render previews before element gets rendered after scrolling
 
 ## Licence
 

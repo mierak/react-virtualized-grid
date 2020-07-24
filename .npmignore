@@ -1,4 +1,4 @@
 /src
 .vscode
-rollup.config.json
+rollup.config.js
 tsconfig.json
