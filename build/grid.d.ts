@@ -9,6 +9,7 @@ export declare type Props = {
     gridGap?: number;
     gridHeight?: string | number;
     className?: string;
+    scrollToIndex?: number;
     children(index: number, rowIndex: number, columnIndex: number): React.ReactNode;
 };
 export declare const VirtualizedGrid: (props: Props) => JSX.Element;

@@ -13,12 +13,13 @@ export type Props = {
 	gridGap?: number;
 	gridHeight?: string | number;
 	className?: string;
+	scrollToIndex?: number;
 	children(index: number, rowIndex: number, columnIndex: number): React.ReactNode;
 };
 
 export const VirtualizedGrid = (props: Props) => {
 	const gridRef = useRef<HTMLDivElement>(null);
-	const previousScroll = useRef({ value: 0 });
+	const previous = useRef({ scrollValue: 0, scrollToIndex: props.scrollToIndex });
 	const [config, setConfig] = useState({ rows: 0, columns: 0 });
 	const [fromTo, setFromTo] = useState({ from: 0, to: 30 });
 
@@ -38,10 +39,36 @@ export const VirtualizedGrid = (props: Props) => {
 	};
 
 	useLayoutEffect(() => {
-		if (gridRef.current && previousScroll.current.value !== gridRef.current.scrollTop) {
-			gridRef.current.scrollTop = previousScroll.current.value;
+		if (gridRef.current && previous.current.scrollValue !== gridRef.current.scrollTop) {
+			gridRef.current.scrollTop = previous.current.scrollValue;
 		}
-	}, [previousScroll.current.value]);
+	}, [previous.current.scrollValue]);
+
+	useEffect(() => {
+		if (previous.current.scrollToIndex === props.scrollToIndex) {
+			return;
+		}
+		const grid = gridRef.current;
+		const itemCount = props.itemCount;
+		const rowHeight = props.rowHeight;
+		const scrollToIndex = props.scrollToIndex;
+		if (grid && scrollToIndex) {
+			const { scrollHeight, clientHeight } = grid;
+
+			let index = 0;
+			if (scrollToIndex >= itemCount) {
+				index = itemCount - 1;
+			} else if (scrollToIndex >= 0) {
+				index = scrollToIndex;
+			}
+
+			const scrollTo =
+				scrollHeight * (Math.floor(index / config.columns) / Math.floor(itemCount / config.columns)) - (clientHeight / 2 - rowHeight / 2);
+
+			grid.scrollTo({ top: scrollTo });
+		}
+		previous.current.scrollToIndex = props.scrollToIndex;
+	}, [config.columns, props.itemCount, props.rowHeight, props.scrollToIndex]);
 
 	useEffect(() => {
 		if (gridRef.current) {
@@ -85,7 +112,7 @@ export const VirtualizedGrid = (props: Props) => {
 		db(event.currentTarget);
 
 		if (gridRef.current) {
-			previousScroll.current.value = gridRef.current.scrollTop;
+			previous.current.scrollValue = gridRef.current.scrollTop;
 		}
 	};
 
@@ -94,7 +121,7 @@ export const VirtualizedGrid = (props: Props) => {
 			[...Array(config.columns)].map((_, cellIndex) => {
 				const index = (rowIndex + fromTo.from) * config.columns + cellIndex;
 				return index < props.itemCount ? (
-					<Cell key={cellIndex} height={props.rowHeight}>
+					<Cell key={rowIndex * config.columns + cellIndex} height={props.rowHeight}>
 						{props.children(index, rowIndex + fromTo.from, cellIndex)}
 					</Cell>
 				) : null;
