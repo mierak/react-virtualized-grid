@@ -1,6 +1,6 @@
 {
 	"name": "@mierak/react-virtualized-grid",
-	"version": "0.0.4-ALPHA",
+	"version": "0.0.5-ALPHA",
 	"main": "build/index.js",
 	"module": "build/index.es.js",
 	"jsnext:main": "build/index.es.js",
